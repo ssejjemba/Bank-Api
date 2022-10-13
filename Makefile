@@ -1,3 +1,8 @@
+APP = github.com/ssejjemba/simplebank
+GOBASE = $(shell pwd)
+GOBIN = $(GOBASE)/build/bin
+LINT_PATH = $(GOBASE)/build/lint
+
 postgres:
 	docker run --name postgres14 -p 5432:5432 -e POSTGRES_USER=root -e POSTGRES_PASSWORD=my_post -d postgres:14-alpine
 
@@ -31,4 +36,14 @@ server:
 mock:
 	mockgen -package mockdb -build_flags=--mod=mod -destination db/mock/store.go github.com/ssejjemba/simplebank/db/sqlc Store
 
-.PHONY: postgres createdb dropdb migrateup migratedown migrateup1 migratedown1 sqlc test server mock
+deps: ## Fetch required dependencies
+	go mod tidy -compat=1.17
+	go mod download
+
+lint: ## Linter for developers
+	$(LINT_PATH)/golangci-lint run --timeout=5m -c .golangci.yml
+
+install-golangci: ## Install the correct version of lint
+	GOBIN=$(LINT_PATH) go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.46.2
+
+.PHONY: postgres createdb dropdb migrateup migratedown migrateup1 migratedown1 sqlc test server mock deps lint install-golangci
